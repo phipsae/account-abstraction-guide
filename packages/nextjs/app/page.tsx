@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Test } from "./test";
 import { ethers } from "ethers";
 import type { NextPage } from "next";
-import { encodeFunctionData, getContractAddress, parseUnits } from "viem";
+import { createPublicClient, encodeFunctionData, getContract, getContractAddress, http, parseUnits } from "viem";
+import { foundry } from "viem/chains";
 import { useAccount, useWriteContract } from "wagmi";
 import { Address } from "~~/components/scaffold-eth";
 import { useScaffoldContract, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
-// const SMART_ACCOUNT = "0x75537828f2ce51be7289709686A69CbFDbB714F1";
+const SMART_ACCOUNT = "0xE451980132E65465d0a498c53f0b5227326Dd73F";
 
 const FACTORY_NONCE = 1; // to deploy a new smart account change nonce to 2, etc.
 const FACTORY_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
@@ -34,6 +36,15 @@ const Home: NextPage = () => {
     contractName: "Account123",
   });
 
+  const { data: payMaster } = useScaffoldContract({
+    contractName: "Paymaster",
+  });
+
+  const publicClient = createPublicClient({
+    chain: foundry,
+    transport: http(),
+  });
+
   /// Get address of smart account that gets created
   const getAddressAA = async () => {
     const sender = ethers.getCreateAddress({
@@ -53,6 +64,19 @@ const Home: NextPage = () => {
     // salt: "0x7c5ea36004851c764c44143b1dcb59679b11c9a68e5f41497f6cf3d480715331",
   });
 
+  const getCountFromSmartAccount = async () => {
+    if (account) {
+      const contract = getContract({
+        address: SMART_ACCOUNT,
+        abi: account?.abi,
+        // 1a. Insert a single client
+        client: publicClient,
+      });
+      const result = await contract.read.count();
+      console.log(result);
+    }
+  };
+
   const signer = useAccount();
 
   const { writeContractAsync: handleOpsAsync } = useScaffoldWriteContract("EntryPoint");
@@ -63,7 +87,7 @@ const Home: NextPage = () => {
       const createAccountEncoded = encodeFunctionData({
         abi: accountFactory?.abi,
         functionName: "createAccount",
-        args: [signer.address || ""],
+        args: [signer.address],
       });
       setCreateAccountEncoded(createAccountEncoded);
     }
@@ -91,20 +115,20 @@ const Home: NextPage = () => {
 
       console.log("InitCode", initCode);
 
-      const callData = "0x";
-      // const callData = executeEncoded;
+      // const callData = "0x";
+      const callData = executeEncoded;
 
       const userOp = {
         sender, // smart account address
         nonce: nonceAccountFactory,
         initCode,
         callData,
-        callGasLimit: 1_000_000,
+        callGasLimit: 500_000,
         verificationGasLimit: 500_000,
         preVerificationGas: 50_000,
-        maxFeePerGas: ethers.parseUnits("100000", "gwei"), //parseUnits("10", 9),
-        maxPriorityFeePerGas: ethers.parseUnits("50000", "gwei"),
-        paymasterAndData: "0x",
+        maxFeePerGas: ethers.parseUnits("10", "gwei"), //parseUnits("10", 9),
+        maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
+        paymasterAndData: payMaster?.address,
         signature: "0x",
       };
       setUserOp(userOp);
@@ -112,10 +136,9 @@ const Home: NextPage = () => {
     }
   };
 
-  const { writeContract } = useWriteContract();
-
   return (
     <>
+      <Test />
       <div className="flex items-center flex-col flex-grow pt-10">
         <div className="px-5">
           <h1 className="text-center">
@@ -134,12 +157,14 @@ const Home: NextPage = () => {
             // console.log("Nonce", txCount);
             console.log("Signer", signer.address);
             console.log("UserOp", userOp);
-            console.log("Sender", sender, "AccountFactory", accountFactory?.address);
+            console.log("AccountFactory", accountFactory?.address);
+            console.log({ sender });
           }}
         >
           Click Me
         </button>
         <button
+          className="btn btn-error"
           type="button"
           onClick={() => {
             createUserOp();
@@ -148,15 +173,15 @@ const Home: NextPage = () => {
           Create User Op
         </button>
         <button
-          className="btn btn-primary"
+          className="btn btn-secondary"
           onClick={async () => {
             try {
               console.log("Deposit To Sender", sender);
               console.log("Signer", signer.address);
               await depositToAsync({
                 functionName: "depositTo",
-                args: [sender],
-                value: parseUnits("1", 18),
+                args: [payMaster?.address],
+                value: parseUnits("200", 18),
               });
             } catch (e) {
               console.error("Error setting greeting:", e);
@@ -164,26 +189,6 @@ const Home: NextPage = () => {
           }}
         >
           Deposit to Account
-        </button>
-
-        <button
-          className="btn btn-primary"
-          onClick={async () => {
-            try {
-              console.log("Deposit To Sender", sender);
-
-              writeContract({
-                address: entryPoint?.address,
-                abi: entryPoint?.abi,
-                functionName: "depositTo",
-                args: [sender],
-              });
-            } catch (e) {
-              console.error("Error setting greeting:", e);
-            }
-          }}
-        >
-          Deposit to Account WAGMI
         </button>
 
         <button
@@ -209,6 +214,13 @@ const Home: NextPage = () => {
           }}
         >
           Get Sender AA
+        </button>
+        <button
+          onClick={() => {
+            getCountFromSmartAccount();
+          }}
+        >
+          Get Count from Smart Account
         </button>
 
         {hash && <div>Transaction Hash: {hash}</div>}

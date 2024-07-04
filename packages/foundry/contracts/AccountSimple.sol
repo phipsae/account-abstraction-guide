@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol"; 
 import "forge-std/console.sol";
 
-contract Account123 is IAccount {
+contract AccountSimple is IAccount {
 
     uint public count;
     address public owner;
@@ -17,19 +17,17 @@ contract Account123 is IAccount {
     }
 
     function validateUserOp(UserOperation calldata userOp, bytes32 , uint256 ) view external returns (uint256 validationData) {
-         address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(keccak256("hello")), userOp.signature);
-        console.logString("validateUserOp from Account123");
-        console.logAddress(recovered);
-        console.logAddress(owner);
-        
-        // return owner == recovered ? 1 : 0;
         return 0;
     }
 
     function execute() external {
         count++;
     }
-  
+}
 
- 
+contract AccountSimpleFactory {
+    function createAccount(address owner) external returns (address) {
+        AccountSimple acc = new AccountSimple(owner);
+        return address(acc);
+    }
 }
