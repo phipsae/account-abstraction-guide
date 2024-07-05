@@ -25,9 +25,9 @@ contract AccountSimple is IAccount {
     }
 }
 
-contract AccountSimpleFactory {
-    function createAccount(address owner) external returns (address) {
-        AccountSimple acc = new AccountSimple(owner);
-        return address(acc);
-    }
-}
+// contract AccountSimpleFactory {
+//     function createAccount(address owner) external returns (address) {
+//         AccountSimple acc = new AccountSimple(owner);
+//         return address(acc);
+//     }
+// }
