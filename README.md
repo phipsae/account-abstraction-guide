@@ -1,3 +1,25 @@
+# Guide to Account Abstraction
+
+This repo should support you in understanding Account Abstraction with ERC4337. Therefor we are using are Simple Account, Account Factory, Paymaster and the EntryPoint contract from the official implementation https://github.com/eth-infinitism/account-abstraction. Everything is build with SE2.
+
+In this example no bundler is used, therefor Create and Create2 is used. Additionally the Smart Account doesnt have any verification inside the execute function, which means everyone can call it, but for this example it doesnt matter.
+
+The repo tries to break all steps down, so that you get a better understanding whats going on.
+
+The first thing you should do is to look at the smart contracts AccountSimple and AccountFactorySimple itself. To understands whats going on there.
+
+AccountSimple inherits form the example Account of the https://github.com/eth-infinitism/account-abstraction. Therefore it needs to implement the validateUserOp function which is mandatory. It contains the whole validation logic, where you can decide which one you want to use (like Passkeys, Email, etc.) In this case we are going with the “normal” ECDSA key pair validation, but the validation logic is embedded in the smart contract. This is the difference to EOAs where they only can use a standard cryptographic signature scheme (ECDSA for Ethereum) for transaction validation.
+
+Account Factory only has a createAccount function where the Simple Accounts can be created. This factory will be called by the entrypoint contract if a initcode is set.
+
+The paymaster has nothing special. Its just an empty contract which inherits two mandatory functions from the https://github.com/eth-infinitism/account-abstraction
+
+First we deposit funds for the paymaster in the EntryPoint contract, since the entrypoint has to pay for the account creation and tx execution, it needs the respective funds. As a second step we create the userOp, where we hand over the initCode, if the smart account wasnt created yet and the calldata. Addtionally the smart contract address (here called sender), the nonce from the entrypoint (replay protection), the paymaster address and a couple of gas parameter are added.
+
+After that we hash the userOp and sign it. Then we append the signature to the userOp and finally we call handleOps in Entrypoint contract, where it then executes the transaction.
+
+To doublecheck if we increased the count of our smart contract and check to counter (step 6).
+
 # 🏗 Scaffold-ETH 2
 
 <h4 align="center">
@@ -65,7 +87,6 @@ Run smart contract test with `yarn foundry:test`
 - Edit your smart contract `YourContract.sol` in `packages/foundry/contracts`
 - Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
 - Edit your deployment scripts in `packages/foundry/script`
-
 
 ## Documentation
 

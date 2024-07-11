@@ -19,6 +19,8 @@ contract AccountSimple is IAccount {
     }
 
     function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 ) view external returns (uint256 validationData) {
+        /// first we hash the message hello, then we use the EthSignedMessageHash to hash the message according to the Ethereum Standard
+        /// then we use ECDSA.recover to recover the address that signed the message, therefore we provide the message hash and the signature
         address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(userOpHash), userOp.signature);
         /// not save because replay with signature possible, which can be found on chain
         // address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(keccak256("hi")), userOp.signature);
@@ -30,6 +32,7 @@ contract AccountSimple is IAccount {
         // return 0;
     }
 
+    /// no verification in here, execute can be called form everywhere
     function execute() external {
         count++;
     }

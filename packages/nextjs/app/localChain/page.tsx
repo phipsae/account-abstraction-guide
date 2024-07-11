@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import type { NextPage } from "next";
 import {
@@ -14,68 +14,121 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
+import { Address } from "~~/components/scaffold-eth";
 import { useScaffoldContract, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
-// const EP_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+/// change manually to create different smart accounts for EOA
+/// (not how it should be done in production) - normally Create2
 const FACTORY_NONCE = 1;
-const FACTORY_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-const PM_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
 
 const LocalChain: NextPage = () => {
   const { data: entryPoint } = useScaffoldContract({
     contractName: "EntryPoint",
   });
 
+  /// change between different accounts (EOAs)
   const account1 = privateKeyToAccount(process.env.NEXT_PUBLIC_FOUNDRY_PRIVATE_KEY_1 as `0x${string}`);
   // const account2 = privateKeyToAccount(process.env.NEXT_PUBLIC_FOUNDRY_PRIVATE_KEY_2 as `0x${string}`);
 
-  const [signature, setSignature] = useState<string>("");
+  const [accountFactoryAddress, setAccountFactoryAddress] = useState<any>();
+  const [paymasterAddress, setPaymasterAddress] = useState<any>();
+  const [created, setCreated] = useState<boolean>(false);
   const [userOp, setUserOp] = useState({} as any);
+  const [userOpHash, setUserOpHash] = useState<`0x${string}`>();
 
-  const { writeContractAsync: handleOpsAsync } = useScaffoldWriteContract("EntryPoint");
-  const { writeContractAsync: depositToAsync } = useScaffoldWriteContract("EntryPoint");
+  const { writeContractAsync: entryPointWriteAsync } = useScaffoldWriteContract("EntryPoint");
 
   const { data: accountSimple } = useScaffoldContract({
     contractName: "AccountSimple",
   });
 
-  const { data: accountSimpleFactory } = useScaffoldContract({
-    contractName: "AccountSimpleFactory",
+  const { data: accountFactorySimple } = useScaffoldContract({
+    contractName: "AccountFactorySimple",
   });
 
-  // const { data: paymaster } = useScaffoldContract({
-  //   contractName: "Paymaster",
-  // });
-
-  // FACTORY_ADDRESS = accountSimpleFactory?.address as `0x${string}`;
-  // PM_ADDRESS = paymaster?.address as `0x${string}`;
-
-  const sender = getContractAddress({
-    // bytecode: "0x6394198df16000526103ff60206004601c335afa6040516060f3",
-    from: FACTORY_ADDRESS as `0x${string}`,
-    nonce: BigInt(FACTORY_NONCE),
-    opcode: "CREATE",
-    // salt: "0x7c5ea36004851c764c44143b1dcb59679b11c9a68e5f41497f6cf3d480715331",
+  const { data: paymaster } = useScaffoldContract({
+    contractName: "Paymaster",
   });
 
-  const SMART_ACCOUNT = sender;
+  useEffect(() => {
+    setPaymasterAddress(paymaster?.address);
+  }, [paymaster]);
+
+  useEffect(() => {
+    setAccountFactoryAddress(accountFactorySimple?.address);
+  }, [accountFactorySimple]);
+
+  /// Create clients with viem
+  const publicClient = createPublicClient({
+    chain: foundry,
+    transport: http(),
+  });
+
+  const walletClient = createWalletClient({
+    account: account1,
+    chain: foundry,
+    transport: http(),
+  });
+
+  /// determine smart account address (sender) upfront (counterfactual) with normal Create method
+  /// does not with bundler, therefore Create2 is necessacry because Create is a forbidden opcode
+  /// because the nonce can change from inception to execution
+  let sender = "";
+
+  if (accountFactoryAddress) {
+    sender = getContractAddress({
+      from: accountFactoryAddress as `0x${string}`,
+      nonce: BigInt(FACTORY_NONCE),
+      opcode: "CREATE",
+    });
+  }
+
+  const smartAccountAddress = sender;
+
+  useEffect(() => {
+    const code = getCode(smartAccountAddress as `0x${string}`);
+    console.log("Code", code);
+    // const checkCode = async () => {
+    //   const code = await getCode(smartAccountAddress as `0x${string}`);
+    //   if (code === "0x") {
+    //     setCreated(false);
+    //   } else {
+    //     console.log("Code", code);
+    //     // setCreated(true);
+    //   }
+    // };
+
+    // checkCode();
+  });
 
   const { data: nonceFromEP } = useScaffoldReadContract({
     contractName: "EntryPoint",
     functionName: "getNonce",
-    args: [sender, BigInt(0)],
+    args: [sender as `0x${string}`, BigInt(0)],
   });
 
+  const getCode = async (_address: `0x${string}`) => {
+    if (accountSimple) {
+      const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+      const code = await provider.getCode(_address as `0x${string}`);
+      console.log("Code", code);
+      setCreated(code !== "0x");
+      return code;
+    }
+  };
+
+  /// determine part for initCode for smart account creation
   let createAccountEncoded = "";
 
-  if (accountSimpleFactory) {
+  if (accountFactorySimple) {
     createAccountEncoded = encodeFunctionData({
-      abi: accountSimpleFactory?.abi,
+      abi: accountFactorySimple?.abi,
       functionName: "createAccount",
       args: [account1.address as `0x${string}`],
     });
   }
 
+  /// determine call data for userOp, which function should be called of smart account
   let executeEncoded = "";
 
   if (accountSimple) {
@@ -85,16 +138,17 @@ const LocalChain: NextPage = () => {
     });
   }
 
-  /// create userOP without signature -- append sig later after signed UserOp
+  /// create userOP without signature -- append sig after UserOp is signed
   const createUserOp = async () => {
     if (executeEncoded && createAccountEncoded) {
-      /// if already SA created then use 0x
-      const initCode = "0x";
-      // const initCode = accountSimpleFactory?.address + createAccountEncoded.slice(2);
+      /// check if smart account already exists if not set initCode for userOp
+      const code = await getCode(smartAccountAddress as `0x${string}`);
+      let initCode = "0x";
+      if (code === "0x") {
+        initCode = accountFactoryAddress + createAccountEncoded.slice(2);
+      }
 
-      // console.log("InitCode", initCode);
-
-      // const callData = "0x";
+      /// set Calldata for userOp
       const callData = executeEncoded;
 
       const userOp = {
@@ -105,9 +159,9 @@ const LocalChain: NextPage = () => {
         callGasLimit: 500_000,
         verificationGasLimit: 500_000,
         preVerificationGas: 50_000,
-        maxFeePerGas: ethers.parseUnits("10", "gwei"), //parseUnits("10", 9),
+        maxFeePerGas: ethers.parseUnits("10", "gwei"),
         maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
-        paymasterAndData: PM_ADDRESS,
+        paymasterAndData: paymasterAddress,
         signature: "0x",
       };
       console.log("User Op", userOp);
@@ -115,8 +169,7 @@ const LocalChain: NextPage = () => {
     }
   };
 
-  const [userOpHash, setUserOpHash] = useState<`0x${string}`>();
-
+  /// hash userOp, requirement to create signature
   const createUserOpHash = async () => {
     console.log(userOp);
     const userOpHash = await entryPoint?.read.getUserOpHash([userOp]);
@@ -124,56 +177,21 @@ const LocalChain: NextPage = () => {
     setUserOpHash(userOpHash);
   };
 
-  // /// Create Signature viem
-  const client = createWalletClient({
-    account: account1,
-    chain: foundry,
-    // mode: "anvil",
-    transport: http(),
-  });
-
+  /// sign userOp
   const createSignature = async () => {
-    console.log("Signer", account1);
-    // /// only for messages like "hi" which are not secure
-    // const message = toBytes(keccak256(toBytes(userOpHash as `0x${string}`)));
-    /// for userOpHash
     const message = toBytes(userOpHash as `0x${string}`);
-    console.log("Message viem", message);
-    const signature = await client.signMessage({
-      // account: account1,
-      // prettier-ignore
-      message: {raw: message},
+    const signature = await walletClient.signMessage({
+      message: { raw: message },
     });
-    console.log(signature);
-    setSignature(signature);
-  };
-
-  /// use ethers.js to create signature
-  const createSignatureEthers = async () => {
-    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-    const wallet = new ethers.Wallet(process.env.NEXT_PUBLIC_FOUNDRY_PRIVATE_KEY_1 as `0x${string}`);
-    const signer = wallet.connect(provider);
-    console.log("Signer", signer);
-    // /// very important!!! thats why viem is not working with just hi as a message
-    // const message = ethers.getBytes(ethers.id(`hi`));
-    /// to make it more secure
-    const message = ethers.getBytes(userOpHash as `0x${string}`);
-    console.log("Message ethers", message);
-    const signature = await signer.signMessage(message);
-    console.log("Signature", signature);
-    setSignature(signature);
+    /// add signature to userOp
+    userOp.signature = signature;
   };
 
   /// read count from account
-  const publicClient = createPublicClient({
-    chain: foundry,
-    transport: http(),
-  });
-
   const getCount = async () => {
     if (accountSimple) {
       const data = await publicClient.readContract({
-        address: SMART_ACCOUNT as `0x${string}`,
+        address: smartAccountAddress as `0x${string}`,
         abi: accountSimple?.abi,
         functionName: "count",
       });
@@ -184,72 +202,83 @@ const LocalChain: NextPage = () => {
   return (
     <>
       <div className="text-center mt-8 bg-secondary p-10">
-        <h1 className="text-4xl my-0">Local Chain</h1>
+        <h1 className="text-4xl my-0">AA Tutorial</h1>
       </div>
-      <button
-        className="btn btn-primary"
-        onClick={() => {
-          // console.log("Entrypoint address", accountSimple?.abi);
-          console.log("SMART ACCOUNT address", SMART_ACCOUNT);
-          console.log("Sender (Smart Account created)", sender);
-          console.log("Signature", signature);
-          console.log(userOp);
-        }}
-      >
-        Click Me for Info
-      </button>
-      <button
-        className="btn btn-secondary"
-        onClick={async () => {
-          try {
-            console.log("Deposit To Sender", sender);
-            await depositToAsync({
-              functionName: "depositTo",
-              args: [PM_ADDRESS],
-              value: parseUnits("100", 18),
-            });
-          } catch (e) {
-            console.error("Error setting greeting:", e);
-          }
-        }}
-      >
-        1. Deposit to Account / Paymaster
-      </button>
-      <button className="btn btn-secondary" onClick={() => createUserOp()}>
-        2. Create User OP
-      </button>
-      <button className="btn btn-secondary" onClick={() => createUserOpHash()}>
-        3. Create User OP Hash
-      </button>
-      <button className="btn btn-secondary" onClick={() => createSignatureEthers()}>
-        4. Sign User OP with Ethers
-      </button>
-      <button className="btn btn-secondary" onClick={() => createSignature()}>
-        4. Sign User OP with Viem
-      </button>
-      <button
-        className="btn btn-primary"
-        onClick={async () => {
-          try {
-            console.log("User Op", userOp);
-            console.log("Account 1", account1.address);
-            /// add signature to userOp
-            userOp.signature = signature;
-            console.log("User Op with Signature attached", userOp);
-            await handleOpsAsync({
-              functionName: "handleOps",
-              args: [[userOp], account1.address],
-            });
-          } catch (e) {
-            console.error("Error setting greeting:", e);
-          }
-        }}
-      >
-        5. Run handleOps in the EntryPoint contract
-      </button>
-      <button className="btn btn-secondary" onClick={() => getCount()}>
-        6. Check - Get count of smart contract {SMART_ACCOUNT}
-      </button>
+
+      <div className="max-w-md mx-auto">
+        <div className="flex flex-col gap-1 mt-2 p-4 border-2 border-blue-100 bg-blue-100 rounded-3xl">
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>Signer Address: </div>
+            <Address address={account1.address} />
+          </div>
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>Paymaster Address:</div>
+            <Address address={paymasterAddress} />
+          </div>
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>Paymaster Address:</div>
+            <Address address={accountFactoryAddress} />
+          </div>
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>SmartAcc. Address:</div>
+            <Address address={smartAccountAddress as `0x${string}`} />
+            <div>{created ? "✅ (Created)" : "❌(Not Created)"}</div>
+          </div>
+        </div>
+        {/* <button
+          className="btn btn-secondary block w-full mb-2"
+          onClick={() => {
+            getCode(smartAccountAddress as `0x${string}`);
+          }}
+        >
+          Click Me for Info
+        </button> */}
+        <button
+          className="btn btn-primary block w-full mb-2 mt-2"
+          onClick={async () => {
+            try {
+              console.log("Deposit To Sender", sender);
+              await entryPointWriteAsync({
+                functionName: "depositTo",
+                args: [paymasterAddress],
+                value: parseUnits("100", 18),
+              });
+            } catch (e) {
+              console.error("Error setting greeting:", e);
+            }
+          }}
+        >
+          1. Deposit to Paymaster
+        </button>
+        <button className="btn btn-secondary block w-full mb-2" onClick={() => createUserOp()}>
+          2. Create User OP
+        </button>
+        <button className="btn btn-primary block w-full mb-2" onClick={() => createUserOpHash()}>
+          3. Hash User OP
+        </button>
+        <button className="btn btn-secondary block w-full mb-2" onClick={() => createSignature()}>
+          4. Sign User OP
+        </button>
+        <button
+          className="btn btn-primary block w-full mb-2"
+          onClick={async () => {
+            try {
+              await entryPointWriteAsync({
+                functionName: "handleOps",
+                args: [[userOp], account1.address],
+              });
+            } catch (e) {
+              console.error("Error setting greeting:", e);
+            }
+          }}
+        >
+          5. Exeute transaction (Run handleOps in EntryPoint)
+        </button>
+        <button className="btn btn-secondary block w-full mb-2" onClick={() => getCount()}>
+          6. Get count of smart contract
+        </button>
+      </div>
+      {/* {smartAccountAddress && getCount()} */}
     </>
   );
 };

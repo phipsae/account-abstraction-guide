@@ -2,9 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "../contracts/AccountSimple.sol";
-import "../contracts/AccountSimpleFactory.sol";
+import "../contracts/AccountFactorySimple.sol";
 import "../contracts/Paymaster.sol";
-import "../contracts/Test.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol"; 
 import "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/EntryPoint.sol";
@@ -35,7 +34,7 @@ contract DeployScript is ScaffoldETHDeploy {
         AccountSimple yourAccount = new AccountSimple(vm.addr(deployerPrivateKey));   
 
         /// Deploy Simple Account Factory --- 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-        AccountSimpleFactory accountSimpleFactory= new AccountSimpleFactory();
+        AccountFactorySimple accountFactorySimple = new AccountFactorySimple();
       
 
         /// Deploy Paymaster
@@ -45,7 +44,7 @@ contract DeployScript is ScaffoldETHDeploy {
         console.logString(
             string.concat(
                  "EntryPoint deployed at: ", vm.toString(address(entryPoint)), "\n",
-                 "AccountSimpleFactory deployed at: ", vm.toString(address(accountSimpleFactory)), "\n",
+                 "AccountSimpleFactory deployed at: ", vm.toString(address(accountFactorySimple)), "\n",
                  "Paymaster deployed at: ", vm.toString(address(paymaster))                   
             )
         );
