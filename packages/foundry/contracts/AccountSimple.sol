@@ -14,8 +14,8 @@ contract AccountSimple is IAccount {
     address public owner;
 
     constructor(address _owner) {
-        console.logString("AccountSimple constructor called");
-        console.logAddress(_owner);
+        // console.logString("AccountSimple constructor called");
+        // console.logAddress(_owner);
         owner = _owner;
     }
 
@@ -23,8 +23,8 @@ contract AccountSimple is IAccount {
         address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(userOpHash), userOp.signature);
         /// not save because replay with signature possible, which can be found on chain
         // address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(keccak256("hi")), userOp.signature);
-        console.logString("Recovered address: ");
-        console.logAddress(recovered);
+        // console.logString("Recovered address: ");
+        // console.logAddress(recovered);
         /// 0 means valid, 1 means invalid (the other way around :))
         return owner == recovered ? 0 : 1;
         // /// if nothing should gets validated

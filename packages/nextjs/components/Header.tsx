@@ -29,6 +29,11 @@ export const menuLinks: HeaderMenuLink[] = [
     href: "/localChain",
     icon: <BugAntIcon className="h-4 w-4" />,
   },
+  {
+    label: "Sepolia Chain",
+    href: "/sepolia",
+    icon: <BugAntIcon className="h-4 w-4" />,
+  },
 ];
 
 export const HeaderMenuLinks = () => {

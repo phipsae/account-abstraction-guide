@@ -2,7 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "../contracts/AccountSimple.sol";
-import "../contracts/AccountSimpleFactory.sol";
+import "../contracts/AccountFactorySimple.sol";
+import "../contracts/AccountFactorySepolia.sol";
 import "../contracts/Paymaster.sol";
 import "../contracts/Test.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -27,25 +28,44 @@ contract DeployScript is ScaffoldETHDeploy {
         /// Start broadcasting transactions
         vm.startBroadcast(deployerPrivateKey);
 
-        /// Deploy EntryPoint contract -- 0x5FbDB2315678afecb367f032d93F642f64180aa3
+
+        // /// Depoly Simple Account Abstraction Contracts
+
+        /// Deploy EntryPoint contract
         EntryPoint entryPoint = new EntryPoint(); 
 
+        // /// Deploy Account
+        // AccountSimple yourAccount = new AccountSimple(vm.addr(deployerPrivateKey));   
 
-        /// Deploy Account
-        AccountSimple yourAccount = new AccountSimple(vm.addr(deployerPrivateKey));   
-
-        /// Deploy Simple Account Factory --- 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-        AccountSimpleFactory accountSimpleFactory= new AccountSimpleFactory();
+        // /// Deploy Simple Account Factory
+        // AccountFactorySimple accountFactorySimple = new AccountFactorySimple();
       
-
         /// Deploy Paymaster
         Paymaster paymaster = new Paymaster();
+
+        // /// Log deployment addresses
+        // console.logString(
+        //     string.concat(
+        //          "EntryPoint deployed at: ", vm.toString(address(entryPoint)), "\n",
+        //          "AccountSimpleFactory deployed at: ", vm.toString(address(accountSimpleFactory)), "\n",
+        //          "Paymaster deployed at: ", vm.toString(address(paymaster))                   
+        //     )
+        // );
+
+        /// Deploy Accounts to Sepolia
+
+        /// Deploy AccountFactorySepolia
+        AccountFactorySepolia accountFactorySepolia = new AccountFactorySepolia();
+
+        /// Deploy Account
+        AccountSimple yourAccount = new AccountSimple(vm.addr(deployerPrivateKey));  
         
+
         /// Log deployment addresses
         console.logString(
             string.concat(
                  "EntryPoint deployed at: ", vm.toString(address(entryPoint)), "\n",
-                 "AccountSimpleFactory deployed at: ", vm.toString(address(accountSimpleFactory)), "\n",
+                 "AccountFactorySepolia deployed at: ", vm.toString(address(accountFactorySepolia)), "\n"
                  "Paymaster deployed at: ", vm.toString(address(paymaster))                   
             )
         );

@@ -11,6 +11,6 @@ contract Test {
         /// first we hash the message hello, then we use the EthSignedMessageHash to hash the message according to the Ethereum Standard
         /// then we use ECDSA.recover to recover the address that signed the message, therefore we provide the message hash and the signature
         address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(keccak256("hello")), sig);
-        console.logAddress(recovered);
+        // console.logAddress(recovered);
     }
 }
