@@ -2,6 +2,8 @@
 
 This repo should support you in understanding Account Abstraction with ERC4337. Therefor we are using are Simple Account, Account Factory, Paymaster and the EntryPoint contract from the official implementation https://github.com/eth-infinitism/account-abstraction. Everything is build with SE2.
 
+![overview aa tutorial](https://github.com/phipsae/AA-SE2/blob/localChainAA/assets/overview.png)
+
 In this example no bundler is used, therefor Create and Create2 is used. Additionally the Smart Account doesnt have any verification inside the execute function, which means everyone can call it, but for this example it doesnt matter.
 
 The repo tries to break all steps down, so that you get a better understanding whats going on.

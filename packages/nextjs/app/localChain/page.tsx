@@ -35,6 +35,7 @@ const LocalChain: NextPage = () => {
   const [created, setCreated] = useState<boolean>(false);
   const [userOp, setUserOp] = useState({} as any);
   const [userOpHash, setUserOpHash] = useState<`0x${string}`>();
+  const [count, setCount] = useState<number | undefined>(undefined);
 
   const { writeContractAsync: entryPointWriteAsync } = useScaffoldWriteContract("EntryPoint");
 
@@ -86,19 +87,7 @@ const LocalChain: NextPage = () => {
   const smartAccountAddress = sender;
 
   useEffect(() => {
-    const code = getCode(smartAccountAddress as `0x${string}`);
-    console.log("Code", code);
-    // const checkCode = async () => {
-    //   const code = await getCode(smartAccountAddress as `0x${string}`);
-    //   if (code === "0x") {
-    //     setCreated(false);
-    //   } else {
-    //     console.log("Code", code);
-    //     // setCreated(true);
-    //   }
-    // };
-
-    // checkCode();
+    getCode(smartAccountAddress as `0x${string}`);
   });
 
   const { data: nonceFromEP } = useScaffoldReadContract({
@@ -108,12 +97,18 @@ const LocalChain: NextPage = () => {
   });
 
   const getCode = async (_address: `0x${string}`) => {
-    if (accountSimple) {
-      const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-      const code = await provider.getCode(_address as `0x${string}`);
-      console.log("Code", code);
-      setCreated(code !== "0x");
-      return code;
+    try {
+      if (accountSimple) {
+        const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+        if (!ethers.isAddress(_address)) {
+          throw new Error(`Invalid Ethereum address: ${_address}`);
+        }
+        const code = await provider.getCode(_address as `0x${string}`);
+        setCreated(code !== "0x");
+        return code;
+      }
+    } catch (error) {
+      console.error("Error fetching contract code:", error);
     }
   };
 
@@ -196,16 +191,13 @@ const LocalChain: NextPage = () => {
         functionName: "count",
       });
       console.log(data);
+      setCount(Number(data));
     }
   };
 
   return (
     <>
-      <div className="text-center mt-8 bg-secondary p-10">
-        <h1 className="text-4xl my-0">AA Tutorial</h1>
-      </div>
-
-      <div className="max-w-md mx-auto">
+      <div className="max-w-md mx-auto mt-10">
         <div className="flex flex-col gap-1 mt-2 p-4 border-2 border-blue-100 bg-blue-100 rounded-3xl">
           <div className="flex flex-row items-center gap-1 mb-2">
             <div>Signer Address: </div>
@@ -277,8 +269,12 @@ const LocalChain: NextPage = () => {
         <button className="btn btn-secondary block w-full mb-2" onClick={() => getCount()}>
           6. Get count of smart contract
         </button>
+        {count && (
+          <div className="mt-4 bg-gray-100 border border-gray-100 rounded-3xl shadow-md text-center">
+            <p className="text-sm">Count: {count}</p>
+          </div>
+        )}
       </div>
-      {/* {smartAccountAddress && getCount()} */}
     </>
   );
 };

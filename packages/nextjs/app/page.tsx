@@ -1,5 +1,6 @@
 "use client";
 
+import LocalChain from "./localChain/page";
 import type { NextPage } from "next";
 
 const Home: NextPage = () => {
@@ -9,11 +10,10 @@ const Home: NextPage = () => {
         <div className="px-5">
           <h1 className="text-center">
             <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">Scaffold-ETH 2</span>
+            <span className="block text-4xl font-bold">Account Abstraction Tutorial</span>
+            <span className="block text-3xl mt-2">with Scaffold-ETH 2</span>
           </h1>
-          <div className="flex justify-center items-center space-x-2">
-            <p className="my-2 font-medium">Connected Address:</p>
-          </div>
+          <LocalChain />
         </div>
       </div>
     </>
