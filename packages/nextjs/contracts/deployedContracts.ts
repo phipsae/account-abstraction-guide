@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     EntryPoint: {
-      address: "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+      address: "0x5fbdb2315678afecb367f032d93f642f64180aa3",
       abi: [
         {
           type: "receive",
@@ -1338,7 +1338,7 @@ const deployedContracts = {
       },
     },
     AccountSimple: {
-      address: "0x610178da211fef7d417bc0e6fed39f05609ad788",
+      address: "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
       abi: [
         {
           type: "constructor",
@@ -1471,10 +1471,12 @@ const deployedContracts = {
           stateMutability: "view",
         },
       ],
-      inheritedFunctions: {},
+      inheritedFunctions: {
+        validateUserOp: "lib/account-abstraction/contracts/interfaces/IAccount.sol",
+      },
     },
     AccountFactorySimple: {
-      address: "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+      address: "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
       abi: [
         {
           type: "function",
@@ -1499,7 +1501,7 @@ const deployedContracts = {
       inheritedFunctions: {},
     },
     Paymaster: {
-      address: "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+      address: "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
       abi: [
         {
           type: "function",
@@ -1616,7 +1618,10 @@ const deployedContracts = {
           stateMutability: "pure",
         },
       ],
-      inheritedFunctions: {},
+      inheritedFunctions: {
+        postOp: "lib/account-abstraction/contracts/interfaces/IPaymaster.sol",
+        validatePaymasterUserOp: "lib/account-abstraction/contracts/interfaces/IPaymaster.sol",
+      },
     },
   },
 } as const;

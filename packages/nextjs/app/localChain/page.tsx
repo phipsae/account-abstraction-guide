@@ -217,14 +217,6 @@ const LocalChain: NextPage = () => {
             <div>{created ? "✅ (Created)" : "❌(Not Created)"}</div>
           </div>
         </div>
-        {/* <button
-          className="btn btn-secondary block w-full mb-2"
-          onClick={() => {
-            getCode(smartAccountAddress as `0x${string}`);
-          }}
-        >
-          Click Me for Info
-        </button> */}
         <button
           className="btn btn-primary block w-full mb-2 mt-2"
           onClick={async () => {
