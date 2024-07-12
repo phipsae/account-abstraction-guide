@@ -14,21 +14,21 @@ The repository breaks down each step to help you gain a better understanding of 
 
 This repository is a work in progress. If further clarification is needed, let me know and I will provide it. As a primary resource, I used the videos from Alchemy for Account, which were very helpful and highly recommended.
 
-**##Contracts**
+## Contracts
 
-**###AccountSimple.sol**
+### AccountSimple.sol
 
 AccountSimple inherits from the example Account in the https://github.com/eth-infinitism/account-abstraction repository by the Ethereum Foundation. As a result, it must implement the mandatory validateUserOp function. This function contains the entire validation logic, allowing you to choose the desired method (such as Passkeys, Email, etc.). In this example, we use the standard ECDSA key pair validation as used with EOAs on Ethereum. The difference is that the validation logic is embedded within the smart contract.
 
 It's important to note that there is no verification required to call the execute function, meaning anyone can call it. A potential check could be to verify that the EntryPoint (having Entrypoint as a state variable in Account) is the msg.sender.
 
-**###AccountFactorySimple.sol**
+### AccountFactorySimple.sol
 
 The Account Factory contains only a createAccount function, which is used to create Simple Accounts. This factory is called by the EntryPoint contract if an initcode is set.
 
 To determine the smart account address, we use the Create method instead of Create2. This involves using a factory nonce that we specify inside our next.js project. Changing the factory nonce will result in a different smart account address for a given EOA. However, for scenarios involving a bundler, Create2 must be used since Create is a forbidden opcode.
 
-**###Paymaster.sol**
+### Paymaster.sol
 
 The paymaster is a simple contract without any special features. It inherits two mandatory functions from the https://github.com/eth-infinitism/account-abstraction repository.
 
