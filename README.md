@@ -2,7 +2,7 @@
 
 This repository is designed to help you understand Account Abstraction using ERC4337. We utilize the Simple Account, Account Factory, Paymaster, and EntryPoint contract from the official implementation available at https://github.com/eth-infinitism/account-abstraction. Everything is built with SE2.
 
-![overview aa guide](https://github.com/phipsae/account-abstraction-guide/blob/localChainAA/assets/overview.png)
+![overview aa guide](https://github.com/phipsae/account-abstraction-guide/assets/overview.png)
 
 When a user submits a user operation to the EntryPoint contract, it checks if the smart account is already created. If not, it calls the account factory to create an account. Then, the call data is used to execute the transaction. The EntryPoint also ensures that it is reimbursed for the gas costs, so it needs to be funded upfront by the party paying for the transaction. In our example, we use a basic implementation of a paymaster, which covers all costs. If the validation is successful, the EntryPoint interacts with the mainnet to complete the transaction.
 
