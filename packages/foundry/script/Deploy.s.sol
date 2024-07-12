@@ -6,7 +6,7 @@ import "../contracts/AccountFactorySimple.sol";
 import "../contracts/Paymaster.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol"; 
-import "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/EntryPoint.sol";
+import "@account-abstraction/contracts/core/EntryPoint.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {

@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 
-import "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IPaymaster.sol";
+import "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 
 contract Paymaster is IPaymaster {
    
