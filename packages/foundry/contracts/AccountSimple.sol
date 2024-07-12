@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@account-abstraction/contracts/interfaces/IAccount.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol"; 
 import "forge-std/console.sol";
 
 contract AccountSimple is IAccount {
@@ -20,7 +19,7 @@ contract AccountSimple is IAccount {
     function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 ) view external returns (uint256 validationData) {
         /// first we hash the message hello, then we use the EthSignedMessageHash to hash the message according to the Ethereum Standard
         /// then we use ECDSA.recover to recover the address that signed the message, therefore we provide the message hash and the signature
-        address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(userOpHash), userOp.signature);
+        address recovered = ECDSA.recover(ECDSA.toEthSignedMessageHash(userOpHash), userOp.signature);
         /// not save because replay with signature possible, which can be found on chain
         // address recovered = ECDSA.recover(MessageHashUtils.toEthSignedMessageHash(keccak256("hi")), userOp.signature);
         console.logString("Recovered address: ");

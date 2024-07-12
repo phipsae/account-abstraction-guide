@@ -5,7 +5,6 @@ import "../contracts/AccountSimple.sol";
 import "../contracts/AccountFactorySimple.sol";
 import "../contracts/Paymaster.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol"; 
 import "@account-abstraction/contracts/core/EntryPoint.sol";
 import "./DeployHelpers.s.sol";
 
@@ -51,7 +50,7 @@ contract DeployScript is ScaffoldETHDeploy {
 
         // /// Test.sol contract test --> to verify signing works correctly
         // bytes32 messageHash = keccak256(abi.encodePacked("hello"));
-        // bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        // bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
 
         // (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, ethSignedMessageHash);
         // bytes memory signature = abi.encodePacked(r, s, v);

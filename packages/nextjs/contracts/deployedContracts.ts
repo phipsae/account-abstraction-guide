@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     EntryPoint: {
-      address: "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+      address: "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
       abi: [
         {
           type: "receive",
@@ -1318,44 +1318,27 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {
-        addStake:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        balanceOf:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        depositTo:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        getDepositInfo:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        getNonce:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/NonceManager.sol",
-        getSenderAddress:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IEntryPoint.sol",
-        getUserOpHash:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IEntryPoint.sol",
-        handleAggregatedOps:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IEntryPoint.sol",
-        handleOps:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IEntryPoint.sol",
-        incrementNonce:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/NonceManager.sol",
-        simulateHandleOp:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IEntryPoint.sol",
-        simulateValidation:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IEntryPoint.sol",
-        unlockStake:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        withdrawStake:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        withdrawTo:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        deposits:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/StakeManager.sol",
-        nonceSequenceNumber:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/core/NonceManager.sol",
+        addStake: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        balanceOf: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        depositTo: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        getDepositInfo: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        getNonce: "lib/account-abstraction/contracts/core/NonceManager.sol",
+        getSenderAddress: "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol",
+        getUserOpHash: "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol",
+        handleAggregatedOps: "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol",
+        handleOps: "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol",
+        incrementNonce: "lib/account-abstraction/contracts/core/NonceManager.sol",
+        simulateHandleOp: "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol",
+        simulateValidation: "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol",
+        unlockStake: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        withdrawStake: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        withdrawTo: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        deposits: "lib/account-abstraction/contracts/core/StakeManager.sol",
+        nonceSequenceNumber: "lib/account-abstraction/contracts/core/NonceManager.sol",
       },
     },
     AccountSimple: {
-      address: "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+      address: "0x610178da211fef7d417bc0e6fed39f05609ad788",
       abi: [
         {
           type: "constructor",
@@ -1487,38 +1470,11 @@ const deployedContracts = {
           ],
           stateMutability: "view",
         },
-        {
-          type: "error",
-          name: "ECDSAInvalidSignature",
-          inputs: [],
-        },
-        {
-          type: "error",
-          name: "ECDSAInvalidSignatureLength",
-          inputs: [
-            {
-              name: "length",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
-        },
-        {
-          type: "error",
-          name: "ECDSAInvalidSignatureS",
-          inputs: [
-            {
-              name: "s",
-              type: "bytes32",
-              internalType: "bytes32",
-            },
-          ],
-        },
       ],
       inheritedFunctions: {},
     },
     AccountFactorySimple: {
-      address: "0x0165878a594ca255338adfa4d48449f69242eb8f",
+      address: "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
       abi: [
         {
           type: "function",
@@ -1543,7 +1499,7 @@ const deployedContracts = {
       inheritedFunctions: {},
     },
     Paymaster: {
-      address: "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+      address: "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
       abi: [
         {
           type: "function",
@@ -1660,12 +1616,7 @@ const deployedContracts = {
           stateMutability: "pure",
         },
       ],
-      inheritedFunctions: {
-        postOp:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IPaymaster.sol",
-        validatePaymasterUserOp:
-          "/Users/philip/Programming/Ethereum/AABuild/AA-SE/node_modules/@account-abstraction/contracts/interfaces/IPaymaster.sol",
-      },
+      inheritedFunctions: {},
     },
   },
 } as const;
