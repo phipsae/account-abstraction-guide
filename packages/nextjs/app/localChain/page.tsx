@@ -1,61 +1,129 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import type { NextPage } from "next";
-import { createPublicClient, encodeFunctionData, getContract, getContractAddress, http, parseUnits } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  encodeFunctionData,
+  getContractAddress,
+  http,
+  parseUnits,
+  toBytes,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import { useAccount, useWriteContract } from "wagmi";
+import { Address } from "~~/components/scaffold-eth";
 import { useScaffoldContract, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
-import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
-const EP_ADDRESS = "0x4826533B4897376654Bb4d4AD88B7faFD0C98528";
-const FACTORY_ADDRESS = "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF";
+/// change manually to create different smart accounts for EOA
+/// (not how it should be done in production) - normally Create2
 const FACTORY_NONCE = 1;
-const SMART_ACCOUNT = "0xD4eF5bFBe5925B905BD3EC0921bFe28b04ac61aE";
-const PM_ADDRESS = "0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf";
 
 const LocalChain: NextPage = () => {
   const { data: entryPoint } = useScaffoldContract({
     contractName: "EntryPoint",
   });
 
-  const { writeContractAsync: handleOpsAsync } = useScaffoldWriteContract("EntryPoint");
-  const { writeContractAsync: depositToAsync } = useScaffoldWriteContract("EntryPoint");
+  /// change between different accounts (EOAs)
+  const account1 = privateKeyToAccount(process.env.NEXT_PUBLIC_FOUNDRY_PRIVATE_KEY_1 as `0x${string}`);
+  // const account2 = privateKeyToAccount(process.env.NEXT_PUBLIC_FOUNDRY_PRIVATE_KEY_2 as `0x${string}`);
+
+  const [accountFactoryAddress, setAccountFactoryAddress] = useState<any>();
+  const [paymasterAddress, setPaymasterAddress] = useState<any>();
+  const [created, setCreated] = useState<boolean>(false);
+  const [userOp, setUserOp] = useState({} as any);
+  const [userOpHash, setUserOpHash] = useState<`0x${string}`>();
+  const [count, setCount] = useState<number | undefined>(undefined);
+
+  const { writeContractAsync: entryPointWriteAsync } = useScaffoldWriteContract("EntryPoint");
 
   const { data: accountSimple } = useScaffoldContract({
     contractName: "AccountSimple",
   });
 
-  const { data: accountSimpleFactory } = useScaffoldContract({
-    contractName: "AccountSimpleFactory",
+  const { data: accountFactorySimple } = useScaffoldContract({
+    contractName: "AccountFactorySimple",
   });
 
-  const signer = useAccount();
+  const { data: paymaster } = useScaffoldContract({
+    contractName: "Paymaster",
+  });
 
-  const sender = getContractAddress({
-    // bytecode: "0x6394198df16000526103ff60206004601c335afa6040516060f3",
-    from: FACTORY_ADDRESS,
-    nonce: BigInt(FACTORY_NONCE),
-    opcode: "CREATE",
-    // salt: "0x7c5ea36004851c764c44143b1dcb59679b11c9a68e5f41497f6cf3d480715331",
+  useEffect(() => {
+    setPaymasterAddress(paymaster?.address);
+  }, [paymaster]);
+
+  useEffect(() => {
+    setAccountFactoryAddress(accountFactorySimple?.address);
+  }, [accountFactorySimple]);
+
+  /// Create clients with viem
+  const publicClient = createPublicClient({
+    chain: foundry,
+    transport: http(),
+  });
+
+  const walletClient = createWalletClient({
+    account: account1,
+    chain: foundry,
+    transport: http(),
+  });
+
+  /// determine smart account address (sender) upfront (counterfactual) with normal Create method
+  /// does not with bundler, therefore Create2 is necessacry because Create is a forbidden opcode
+  /// because the nonce can change from inception to execution
+  let sender = "";
+
+  if (accountFactoryAddress) {
+    sender = getContractAddress({
+      from: accountFactoryAddress as `0x${string}`,
+      nonce: BigInt(FACTORY_NONCE),
+      opcode: "CREATE",
+    });
+  }
+
+  const smartAccountAddress = sender;
+
+  useEffect(() => {
+    getCode(smartAccountAddress as `0x${string}`);
   });
 
   const { data: nonceFromEP } = useScaffoldReadContract({
     contractName: "EntryPoint",
     functionName: "getNonce",
-    args: [sender, BigInt(0)],
+    args: [sender as `0x${string}`, BigInt(0)],
   });
 
+  const getCode = async (_address: `0x${string}`) => {
+    try {
+      if (accountSimple) {
+        const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+        if (!ethers.isAddress(_address)) {
+          throw new Error(`Invalid Ethereum address: ${_address}`);
+        }
+        const code = await provider.getCode(_address as `0x${string}`);
+        setCreated(code !== "0x");
+        return code;
+      }
+    } catch (error) {
+      console.error("Error fetching contract code:", error);
+    }
+  };
+
+  /// determine part for initCode for smart account creation
   let createAccountEncoded = "";
 
-  if (accountSimpleFactory) {
+  if (accountFactorySimple) {
     createAccountEncoded = encodeFunctionData({
-      abi: accountSimpleFactory?.abi,
+      abi: accountFactorySimple?.abi,
       functionName: "createAccount",
-      args: [signer.address as `0x${string}`],
+      args: [account1.address as `0x${string}`],
     });
   }
 
+  /// determine call data for userOp, which function should be called of smart account
   let executeEncoded = "";
 
   if (accountSimple) {
@@ -65,106 +133,148 @@ const LocalChain: NextPage = () => {
     });
   }
 
-  let userOp = {} as any;
+  /// create userOP without signature -- append sig after UserOp is signed
+  const createUserOp = async () => {
+    if (executeEncoded && createAccountEncoded) {
+      /// check if smart account already exists if not set initCode for userOp
+      const code = await getCode(smartAccountAddress as `0x${string}`);
+      let initCode = "0x";
+      if (code === "0x") {
+        initCode = accountFactoryAddress + createAccountEncoded.slice(2);
+      }
 
-  // const createUserOp = async () => {
-  if (executeEncoded && createAccountEncoded) {
-    /// if already SA created then use 0x
-    const initCode = "0x";
-    // const initCode = accountSimpleFactory?.address + createAccountEncoded.slice(2);
+      /// set Calldata for userOp
+      const callData = executeEncoded;
 
-    // console.log("InitCode", initCode);
+      const userOp = {
+        sender, // smart account address
+        nonce: nonceFromEP, // nonce from the entrypoint nonce manager
+        initCode,
+        callData,
+        callGasLimit: 500_000,
+        verificationGasLimit: 500_000,
+        preVerificationGas: 50_000,
+        maxFeePerGas: ethers.parseUnits("10", "gwei"),
+        maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
+        paymasterAndData: paymasterAddress,
+        signature: "0x",
+      };
+      console.log("User Op", userOp);
+      setUserOp(userOp);
+    }
+  };
 
-    // const callData = "0x";
-    const callData = executeEncoded;
+  /// hash userOp, requirement to create signature
+  const createUserOpHash = async () => {
+    console.log(userOp);
+    const userOpHash = await entryPoint?.read.getUserOpHash([userOp]);
+    console.log("User Op Hash", userOpHash);
+    setUserOpHash(userOpHash);
+  };
 
-    userOp = {
-      sender, // smart account address
-      nonce: nonceFromEP, // nonce from the entrypoint nonce manager
-      initCode,
-      callData,
-      callGasLimit: 500_000,
-      verificationGasLimit: 500_000,
-      preVerificationGas: 50_000,
-      maxFeePerGas: ethers.parseUnits("10", "gwei"), //parseUnits("10", 9),
-      maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
-      paymasterAndData: PM_ADDRESS,
-      signature: "0x",
-    };
-  }
-  // };
+  /// sign userOp
+  const createSignature = async () => {
+    const message = toBytes(userOpHash as `0x${string}`);
+    const signature = await walletClient.signMessage({
+      message: { raw: message },
+    });
+    /// add signature to userOp
+    userOp.signature = signature;
+  };
 
   /// read count from account
-  const publicClient = createPublicClient({
-    chain: foundry,
-    transport: http(),
-  });
-
   const getCount = async () => {
     if (accountSimple) {
       const data = await publicClient.readContract({
-        address: SMART_ACCOUNT,
+        address: smartAccountAddress as `0x${string}`,
         abi: accountSimple?.abi,
         functionName: "count",
       });
       console.log(data);
+      setCount(Number(data));
     }
   };
 
   return (
     <>
-      <div className="text-center mt-8 bg-secondary p-10">
-        <h1 className="text-4xl my-0">Local Chain</h1>
+      <div className="max-w-md mx-auto mt-10">
+        <div className="flex flex-col gap-1 mt-2 p-4 border-2 border-blue-100 bg-blue-100 rounded-3xl">
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>Signer Address: </div>
+            <Address address={account1.address} />
+          </div>
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>Paymaster Address:</div>
+            <Address address={paymasterAddress} />
+          </div>
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>Paymaster Address:</div>
+            <Address address={accountFactoryAddress} />
+          </div>
+          <div className="flex flex-row items-center gap-1 mb-2">
+            <div>SmartAcc. Address:</div>
+            <Address address={smartAccountAddress as `0x${string}`} />
+            <div>{created ? "✅ (Created)" : "❌(Not Created)"}</div>
+          </div>
+        </div>
+        {/* <button
+          className="btn btn-secondary block w-full mb-2"
+          onClick={() => {
+            getCode(smartAccountAddress as `0x${string}`);
+          }}
+        >
+          Click Me for Info
+        </button> */}
+        <button
+          className="btn btn-primary block w-full mb-2 mt-2"
+          onClick={async () => {
+            try {
+              console.log("Deposit To Sender", sender);
+              await entryPointWriteAsync({
+                functionName: "depositTo",
+                args: [paymasterAddress],
+                value: parseUnits("100", 18),
+              });
+            } catch (e) {
+              console.error("Error setting greeting:", e);
+            }
+          }}
+        >
+          1. Deposit to Paymaster
+        </button>
+        <button className="btn btn-secondary block w-full mb-2" onClick={() => createUserOp()}>
+          2. Create User OP
+        </button>
+        <button className="btn btn-primary block w-full mb-2" onClick={() => createUserOpHash()}>
+          3. Hash User OP
+        </button>
+        <button className="btn btn-secondary block w-full mb-2" onClick={() => createSignature()}>
+          4. Sign User OP
+        </button>
+        <button
+          className="btn btn-primary block w-full mb-2"
+          onClick={async () => {
+            try {
+              await entryPointWriteAsync({
+                functionName: "handleOps",
+                args: [[userOp], account1.address],
+              });
+            } catch (e) {
+              console.error("Error setting greeting:", e);
+            }
+          }}
+        >
+          5. Exeute transaction (Run handleOps in EntryPoint)
+        </button>
+        <button className="btn btn-secondary block w-full mb-2" onClick={() => getCount()}>
+          6. Get count of smart contract
+        </button>
+        {count && (
+          <div className="mt-4 bg-gray-100 border border-gray-100 rounded-3xl shadow-md text-center">
+            <p className="text-sm">Count: {count}</p>
+          </div>
+        )}
       </div>
-      <button
-        className="btn btn-primary"
-        onClick={() => {
-          console.log("Entrypoint address", accountSimple?.abi);
-          console.log("Signer", signer.address);
-          console.log("Sender (Smart Account created)", sender);
-          console.log(userOp);
-        }}
-      >
-        Click Me for Info
-      </button>
-      <button
-        className="btn btn-secondary"
-        onClick={async () => {
-          try {
-            console.log("Deposit To Sender", sender);
-            console.log("Signer", signer.address);
-            await depositToAsync({
-              functionName: "depositTo",
-              args: [PM_ADDRESS],
-              value: parseUnits("100", 18),
-            });
-          } catch (e) {
-            console.error("Error setting greeting:", e);
-          }
-        }}
-      >
-        1. Deposit to Account / Paymaster
-      </button>
-      <button
-        className="btn btn-primary"
-        onClick={async () => {
-          try {
-            console.log("User Op", userOp);
-            console.log("Signer", signer.address);
-            await handleOpsAsync({
-              functionName: "handleOps",
-              args: [[userOp], signer.address],
-            });
-          } catch (e) {
-            console.error("Error setting greeting:", e);
-          }
-        }}
-      >
-        2. Run handleOps in the EntryPoint contract
-      </button>
-      <button className="btn btn-secondary" onClick={() => getCount()}>
-        3. get count of smart contract {SMART_ACCOUNT}
-      </button>
     </>
   );
 };

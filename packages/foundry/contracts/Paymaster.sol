@@ -2,12 +2,13 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 
-import "/Users/philip/Programming/Ethereum/AABuild/PWAA/node_modules/@account-abstraction/contracts/interfaces/IPaymaster.sol";
+import "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 
 contract Paymaster is IPaymaster {
    
     function validatePaymasterUserOp(UserOperation calldata, bytes32 , uint256)
     external pure returns (bytes memory context, uint256 validationData) {
+        // that means we pay for every user operation that comes through here
         context = new bytes(0);
         validationData = 0;
     }
