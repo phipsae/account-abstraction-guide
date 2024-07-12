@@ -1,4 +1,4 @@
-# Guide to Account Abstraction
+# 👩‍🏫 Guide to Account Abstraction
 
 This repository is designed to help you understand Account Abstraction using ERC4337. We utilize the Simple Account, Account Factory, Paymaster, and EntryPoint contract from the official implementation available at https://github.com/eth-infinitism/account-abstraction. Everything is built with SE2.
 
@@ -14,7 +14,7 @@ The repository breaks down each step to help you gain a better understanding of 
 
 This repository is a work in progress. If further clarification is needed, let me know and I will provide it. As a primary resource, I used the videos from Alchemy for Account, which were very helpful and highly recommended.
 
-## Contracts
+## 👩‍💻 Contracts
 
 ### AccountSimple.sol
 
@@ -34,7 +34,7 @@ The paymaster is a simple contract without any special features. It inherits two
 
 We have to deposit funds for the paymaster in the EntryPoint contract (using its depositTo function). Since the entrypoint has to pay for the account creation and tx execution, it needs to make sure it has the respective funds.
 
-**###EntryPoint.sol**
+### EntryPoint.sol
 
 We use the EntryPoint from the https://github.com/eth-infinitism/account-abstraction repository. After we create the singed userOps with initCode and callData we hand it over to the EntryPoint, via calling the handleOps function.
 
