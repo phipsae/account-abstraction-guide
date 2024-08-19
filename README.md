@@ -1,6 +1,6 @@
 # 👩‍🏫 Guide to Account Abstraction
 
-This repository is designed to help you understand Account Abstraction using ERC4337. We utilize the Simple Account, Account Factory, Paymaster, and EntryPoint contract from the official implementation available at https://github.com/eth-infinitism/account-abstraction. Everything is built with SE2.
+This repository is designed to help you understand Account Abstraction using ERC4337. We utilize the Simple Account, Account Factory, Paymaster, and EntryPoint contract from the official implementation available at https://github.com/eth-infinitism/account-abstraction. Everything is built with SE2!
 
 ![overview aa guide](https://github.com/phipsae/account-abstraction-guide/blob/main/assets/overview.png)
 
